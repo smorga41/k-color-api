@@ -1,6 +1,9 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from algorithms.greedy import greedy_coloring, greedy_bfs_coloring
+from algorithms.backtrack import find_min_k_backtracking
+from analysis.scaling import analyse_algorithm_scalability
+from utils.validation import validate_graph, validate_algorithm_name, valid_algorithms
 
 app = Flask(__name__)
 CORS(app)
@@ -10,29 +13,23 @@ def get_hello_world():
     return jsonify({"message": "Hello world"})
 
 @app.route('/color-graph/', methods=['POST'])
-def greedy_color():
-    print("API called ")
+def color_graph():
     data = request.get_json()
     graph = data.get('graph')
     algorithm = data.get('algorithm', 'greedy')
     
     # validation
-    if graph is None:
-        return jsonify({"message": "Graph and k must be provided"}), 400
-    if not isinstance(graph, dict):
-        return jsonify({"message" "Graph must be a dictionary"}), 400
+    if validate_graph(graph) is not True:
+        return validate_graph(graph)
     
-    # Ensure graph is adjacency list
-    for node, neighbours in graph.items():
-        if not isinstance(neighbours, list):
-            return jsonify({'message': f'neighbours of node {node} must be a list'}), 400
-    
+    if validate_algorithm_name(algorithm) is not True:
+        return validate_algorithm_name(algorithm)
+
     valid_algorithms = {
         "greedy": greedy_coloring,
-        "greedy_bfs": greedy_bfs_coloring
+        "greedy_bfs": greedy_bfs_coloring,
+        "backtrack": find_min_k_backtracking
     }
-    if algorithm not in valid_algorithms.keys():
-        return jsonify({'message': f'Invalid algorithm {algorithm}, Valid options are {', '.join(valid_algorithms.keys())}'})
     
     try:
         coloring_result = valid_algorithms[algorithm](graph)
@@ -45,8 +42,27 @@ def greedy_color():
         'result': coloring_result
     }), 200
 
+@app.route('/analysis/scalability')
+def analyse_scalability():
+    data = request.get_json()
+    algorithm_name = data.get('algorithm')
+    density = data.get('density')
+    
+    if density < 0  or density > 1:
+        return jsonify({'message': 'Density must be a value between 0 and 1'})
 
+    if validate_algorithm_name(algorithm_name) is not True:
+        return validate_algorithm_name(algorithm_name)
+    # Run Experiment
 
+    algorithms = valid_algorithms()
+    try:
+        algorithm = algorithms[algorithm_name]
+        experiment_result = analyse_algorithm_scalability(algorithm, density)
+    except Exception as e:
+        return jsonify({
+            'message': f'Error occured while executing the {algorithm_name} algorithm: {str(e)}'
+        }), 500
 
 
 
