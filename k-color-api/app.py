@@ -1,5 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import traceback
+
 from algorithms.greedy import greedy_coloring, greedy_bfs_coloring
 from algorithms.backtrack import find_min_k_backtracking
 from analysis.scaling import analyse_algorithm_scalability
@@ -30,7 +32,7 @@ def color_graph():
         "greedy_bfs": greedy_bfs_coloring,
         "backtrack": find_min_k_backtracking
     }
-    
+
     try:
         coloring_result = valid_algorithms[algorithm](graph)
     except Exception as e:
@@ -42,11 +44,13 @@ def color_graph():
         'result': coloring_result
     }), 200
 
-@app.route('/analysis/scalability')
+@app.route('/analysis/scalability', methods=['POST'])
 def analyse_scalability():
     data = request.get_json()
     algorithm_name = data.get('algorithm')
     density = data.get('density')
+    repeats = data.get('repeats')
+    node_sizes = data.get('node_sizes')
     
     if density < 0  or density > 1:
         return jsonify({'message': 'Density must be a value between 0 and 1'})
@@ -58,10 +62,11 @@ def analyse_scalability():
     algorithms = valid_algorithms()
     try:
         algorithm = algorithms[algorithm_name]
-        experiment_result = analyse_algorithm_scalability(algorithm, density)
+        experiment_result = analyse_algorithm_scalability(algorithm, density, node_sizes, repeats)
+        return experiment_result
     except Exception as e:
         return jsonify({
-            'message': f'Error occured while executing the {algorithm_name} algorithm: {str(e)}'
+            'message': f'Error occured while executing the {algorithm_name} algorithm: {str(e)} \n {traceback.format_exc()}'
         }), 500
 
 
