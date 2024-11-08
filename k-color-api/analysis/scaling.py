@@ -49,6 +49,7 @@ def analyse_algorithm_scalability(algorithm, density, node_sizes, num_graphs=10)
     """
     # Run for each
     results = {}
+    print(algorithm)
 
     for node_size in node_sizes:
         graphs = []

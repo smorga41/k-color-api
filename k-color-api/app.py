@@ -6,6 +6,7 @@ from algorithms.greedy import greedy_coloring, greedy_bfs_coloring
 from algorithms.backtrack import find_min_k_backtracking
 from analysis.scaling import analyse_algorithm_scalability
 from utils.validation import validate_graph, validate_algorithm_name, valid_algorithms
+from utils.format_results import combine_scaling_result
 
 app = Flask(__name__)
 CORS(app)
@@ -65,14 +66,11 @@ def analyse_scalability():
     algorithms = valid_algorithms()
     try:
         experiment_result = {}
-        print(algorithm_names)
         for algorithm_name in algorithm_names:
-            print(algorithm_name)
-            # print(algorithm_name)
             algorithm = algorithms[algorithm_name]
             experiment_result.update({algorithm_name: analyse_algorithm_scalability(algorithm, density, node_sizes, repeats)})
-            print(experiment_result.keys())
-        return experiment_result
+            result = combine_scaling_result(experiment_result)
+        return result
     except Exception as e:
         return jsonify({
             'message': f'Error occured while executing the {algorithm_name} algorithm: {str(e)} \n {traceback.format_exc()}'
