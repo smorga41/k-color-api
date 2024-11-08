@@ -20,11 +20,9 @@ def combine_scaling_result(data):
 
     chart_data = []
     for node_size in node_sizes:
-        print(node_size)
         entry = {"nodeSize": node_size}
         for algorithm in algorithms:
             metrics = data[algorithm].get(node_size, {})
-            print(metrics)
             entry[f"{algorithm}_avg_memory"] = metrics.get("avg_memory", None)
             entry[f"{algorithm}_std_memory"] = metrics.get("std_memory", None)
             entry[f"{algorithm}_avg_runtime"] = metrics.get("avg_runtime", None)
