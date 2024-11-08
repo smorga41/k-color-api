@@ -1,5 +1,6 @@
 # Analysing how an algorithm handles scaling grpahs at a fixed density
 import time
+from numpy import std
 
 from utils.generate_graph import generate_graph_nd
 from analysis.measurements import measure_runtime, measure_memory
@@ -63,10 +64,26 @@ def analyse_algorithm_scalability(algorithm, density, node_sizes, num_graphs=10)
 
             _, peak_memory = measure_memory(algorithm, graph)
             memories.append(peak_memory)
+
         avg_runtime = sum(runtimes)/ len(runtimes)
+        std_runtime = std(runtimes)
+        min_runtime = min(runtimes)
+        max_runtime = max(runtimes)
         avg_memory = sum(memories)/ len(memories)
-        print("runtime: ", avg_runtime)
-        print("memory: ", avg_memory)
+        std_memory = std(memories)
+        min_memory = min(memories)
+        max_memory = max(memories)
+
+        results.update({node_size: {
+            "avg_runtime": avg_runtime,
+            "std_runtime": std_runtime,
+            "min_runtime": min_runtime,
+            "max_runtime": max_runtime,
+            "avg_memory": avg_memory,
+            "std_memory": std_memory,
+            "min_memory": min_memory,
+            "max_memory": max_memory
+        }})
     return results
 
 

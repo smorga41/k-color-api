@@ -47,7 +47,7 @@ def color_graph():
 @app.route('/analysis/scalability', methods=['POST'])
 def analyse_scalability():
     data = request.get_json()
-    algorithm_name = data.get('algorithm')
+    algorithm_names = data.get('algorithms')
     density = data.get('density')
     repeats = data.get('repeats')
     node_sizes = data.get('node_sizes')
@@ -55,14 +55,23 @@ def analyse_scalability():
     if density < 0  or density > 1:
         return jsonify({'message': 'Density must be a value between 0 and 1'})
 
-    if validate_algorithm_name(algorithm_name) is not True:
-        return validate_algorithm_name(algorithm_name)
+    for algorithm_name in algorithm_names:
+        if validate_algorithm_name(algorithm_name) is not True:
+            return jsonify({
+                'message': validate_algorithm_name(algorithm_name)
+            }), 500
     # Run Experiment
 
     algorithms = valid_algorithms()
     try:
-        algorithm = algorithms[algorithm_name]
-        experiment_result = analyse_algorithm_scalability(algorithm, density, node_sizes, repeats)
+        experiment_result = {}
+        print(algorithm_names)
+        for algorithm_name in algorithm_names:
+            print(algorithm_name)
+            # print(algorithm_name)
+            algorithm = algorithms[algorithm_name]
+            experiment_result.update({algorithm_name: analyse_algorithm_scalability(algorithm, density, node_sizes, repeats)})
+            print(experiment_result.keys())
         return experiment_result
     except Exception as e:
         return jsonify({

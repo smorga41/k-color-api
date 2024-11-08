@@ -86,7 +86,7 @@ def greedy_coloring(graph):
         while color in neighbor_colors:
             color += 1
         coloring[node] = color
-        steps.append(coloring.copy())
+    steps.append(coloring.copy())
          
 
     res_obj['steps'] = steps

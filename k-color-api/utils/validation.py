@@ -30,7 +30,7 @@ def validate_graph(graph):
 def validate_algorithm_name(algorithm_name):
     algorithms = valid_algorithms()
     if algorithm_name not in algorithms.keys():
-        return jsonify({'message': f'Invalid algorithm {algorithm_name}, Valid options are {', '.join(valid_algorithms.keys())}'})
+        return (f'Invalid algorithm {algorithm_name}, Valid options are {', '.join(algorithms.keys())}')
 
     return True
 
