@@ -1,6 +1,9 @@
 import random
+import string
 from time import time
 from typing import List, Tuple, Dict
+
+from database.db_manager import MongoDBManager
 
 def generate_graph_nd(N: int, D: float) -> Dict[int, List[int]]:
     """
@@ -42,7 +45,7 @@ def generate_graph_ne(N: int, E: int) -> Dict[int, List[int]]:
         for i, j in zip(i_nodes, j_nodes):
             if i == j:
                 continue  # Skip self-loops
-            edge = tuple(sorted((i, j)))
+            edge = tuple(sorted((str(i), str(j))))
             if edge not in edges_set:
                 new_edges.add(edge)
                 if len(new_edges) + len(edges_set) >= E:
@@ -52,6 +55,7 @@ def generate_graph_ne(N: int, E: int) -> Dict[int, List[int]]:
 
     edges = list(edges_set)
     graph = nodes_edges_to_graph(nodes, edges)
+    storeGraphinMongo(graph, "random", N, E)
     return graph
 
 def generate_mst(N: int) -> Tuple[List[int], List[Tuple[int, int]]]:
@@ -65,8 +69,8 @@ def generate_mst(N: int) -> Tuple[List[int], List[Tuple[int, int]]]:
 
     # Connect nodes to form a tree (N-1 edges)
     for i in range(1, N):
-        node1 = nodes[i]
-        node2 = nodes[random.randint(0, i - 1)]
+        node1 = str(nodes[i])
+        node2 = str(nodes[random.randint(0, i - 1)])
         edge = tuple(sorted((node1, node2)))
         edges.append(edge)
 
@@ -76,11 +80,23 @@ def nodes_edges_to_graph(nodes: List[int], edges: List[Tuple[int, int]]) -> Dict
     """
     Converts lists of nodes and edges into an adjacency list representation of a graph.
     """
-    graph: Dict[int, List[int]] = {node: [] for node in nodes}
+    graph: Dict[str, List[str]] = {str(node): [] for node in nodes}
     for node1, node2 in edges:
         graph[node1].append(node2)
         graph[node2].append(node1)
     return graph
+
+def storeGraphinMongo(graph, type, N, E):
+    mongo_manager = MongoDBManager()
+    name = [type, str(N), str(E), str(''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))]
+    graph_data = {
+        "name": "_".join(name),
+        "type": type,
+        "N": N,
+        "E": E,
+        "graph": graph
+    }
+    mongo_manager.save_graph(graph_data)
 
 # Example usage:
 if __name__ == "__main__":
@@ -90,3 +106,5 @@ if __name__ == "__main__":
     print("Adjacency List Representation of the Graph:")
     for node, neighbors in graph.items():
         print(f"{node}: {neighbors}")
+    
+
