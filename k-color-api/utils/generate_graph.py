@@ -3,22 +3,38 @@ import string
 from time import time
 from typing import List, Tuple, Dict
 
-from database.db_manager import MongoDBManager
+from utils.utils import ND_to_NE, DE_to_NE
 
-def generate_graph_nd(N: int, D: float) -> Dict[int, List[int]]:
+def generate_random_graph(N, D, E, db_manager):
+    #TODO add validation that exactly 2 of N,D,E are present and the third is None
+    if not D:
+        return generate_graph_ne(N, E, db_manager)
+    elif not E:
+        return generate_graph_nd(N, D, db_manager)
+    elif not N:
+        return generate_graph_de(D, E, db_manager)
+    
+
+def generate_graph_de(D: float, E: int, db_manager):
+    N, E = DE_to_NE(D, E)
+
+    return generate_graph_ne(N, E, db_manager)
+
+def generate_graph_nd(N: int, D: float, db_manager) -> Dict[int, List[int]]:
     """
     Generates a connected undirected graph with N nodes and density D.
     """
-    if D <= 0 or D >= 1:
-        raise ValueError("Graph density must be between 0 and 1 (non-inclusive).")
+    N, E = ND_to_NE(N, D)
+    # if D <= 0 or D >= 1:
+    #     raise ValueError("Graph density must be between 0 and 1 (non-inclusive).")
     
-    max_edges = N * (N - 1) // 2
-    E = int(max_edges * D)
-    if E < N - 1:
-        E = N - 1  # Ensure the graph can be connected
-    return generate_graph_ne(N, E)
+    # max_edges = N * (N - 1) // 2
+    # E = int(max_edges * D)
+    # if E < N - 1:
+    #     E = N - 1  # Ensure the graph can be connected
+    return generate_graph_ne(N, E, db_manager)
 
-def generate_graph_ne(N: int, E: int) -> Dict[int, List[int]]:
+def generate_graph_ne(N: int, E: int, db_manager) -> Dict[int, List[int]]:
     """
     Generates a connected undirected graph with N nodes and E edges.
     """
@@ -55,7 +71,7 @@ def generate_graph_ne(N: int, E: int) -> Dict[int, List[int]]:
 
     edges = list(edges_set)
     graph = nodes_edges_to_graph(nodes, edges)
-    storeGraphinMongo(graph, "random", N, E)
+    storeGraphinMongo(graph, "random", N, E, db_manager)
     return graph
 
 def generate_mst(N: int) -> Tuple[List[int], List[Tuple[int, int]]]:
@@ -86,17 +102,17 @@ def nodes_edges_to_graph(nodes: List[int], edges: List[Tuple[int, int]]) -> Dict
         graph[node2].append(node1)
     return graph
 
-def storeGraphinMongo(graph, type, N, E):
-    mongo_manager = MongoDBManager()
-    name = [type, str(N), str(E), str(''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))]
+def storeGraphinMongo(graph, graph_type, N, E, db_manager):
+    name = [graph_type, str(N), str(E), str(''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))]
     graph_data = {
         "name": "_".join(name),
-        "type": type,
+        "format": "adjacency_list",
+        "graph_type": graph_type,
         "N": N,
         "E": E,
         "graph": graph
     }
-    mongo_manager.save_graph(graph_data)
+    db_manager.save_graph(graph_data)
 
 # Example usage:
 if __name__ == "__main__":
