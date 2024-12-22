@@ -2,10 +2,12 @@
 import time
 from numpy import std
 
+from database.db_manager import MongoDBManager
 from utils.generate_graph import generate_graph_nd
 from analysis.measurements import measure_runtime, measure_memory
+from utils.get_graph import get_graphs_nd
 
-def analyse_algorithm_scalability(algorithm, density, node_sizes, num_graphs=10):
+def analyse_algorithm_scalability(algorithm, density, node_sizes, num_graphs=10, db_manager = None):
     """
     Evaluate the scalability of a given graph algorithm by testing its performance across 
     different graph sizes at a fixed density.
@@ -47,14 +49,15 @@ def analyse_algorithm_scalability(algorithm, density, node_sizes, num_graphs=10)
        - Record the performance metrics for later analysis.
 
     """
+    if not db_manager:
+        db_manager = MongoDBManager()
     # Run for each
     results = {}
 
     for node_size in node_sizes:
         graphs = []
 
-        for _ in range(num_graphs):
-            graphs.append(generate_graph_nd(node_size, density))
+        graphs = get_graphs_nd("random", node_size, density, num_graphs, db_manager)
 
         runtimes = []
         memories = []

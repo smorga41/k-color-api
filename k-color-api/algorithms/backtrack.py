@@ -34,7 +34,8 @@ def backtrack_coloring(node_index, graph, k, coloring, nodes_ordered, steps):
     for color in range(1, k + 1):
         if is_safe(current_node, color, graph, coloring):
             coloring[current_node] = color  # Assign color
-            steps.append(coloring.copy())
+            if steps:
+                steps.append(coloring.copy())
 
 
             if backtrack_coloring(node_index + 1, graph, k, coloring, nodes_ordered, steps):
@@ -42,12 +43,13 @@ def backtrack_coloring(node_index, graph, k, coloring, nodes_ordered, steps):
 
             # Backtrack
             del coloring[current_node]
-            steps.append(coloring.copy())
-
-    steps.append(coloring.copy())
+            if steps:
+                steps.append(coloring.copy())
+    if steps:
+        steps.append(coloring.copy())
     return False  # No valid color found for this node
 
-def find_min_k_backtracking(graph, record_steps=True):
+def find_min_k_backtracking(graph, record_steps=False):
     """
     Find the minimum number of colors needed to color the graph.
     
@@ -68,16 +70,16 @@ def find_min_k_backtracking(graph, record_steps=True):
     nodes_ordered = sorted(nodes, key=lambda x: len(graph[x]), reverse=True)
     
     k = 1  # Start with one color
-    # steps = []
     while True:
         coloring = {}
         steps = [] if record_steps else None
         if backtrack_coloring(0, graph, k, coloring, nodes_ordered, steps):
             res_obj['chromatic_number'] = k
+            res_obj['k'] = k
             if record_steps:
                 res_obj['steps'] = steps
-            res_obj['steps'].append(coloring) 
+                res_obj['steps'].append(coloring)
+            res_obj['coloring'] = coloring
 
             return res_obj
-        # steps.append(steps)
         k += 1  # Try next number of colors

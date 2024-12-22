@@ -1,7 +1,7 @@
 from .algorithmResult import algorithmResultTemplate
 from collections import deque
 
-def greedy_bfs_coloring(graph):
+def greedy_bfs_coloring(graph, record_steps=False):
     """
     Performs greedy coloring of the graph using BFS traversal.
     :param graph: dict, adjacency list of the graph
@@ -47,14 +47,17 @@ def greedy_bfs_coloring(graph):
         coloring[current_node] = color
 
         # Record the coloring step
-        steps.append(coloring.copy())
+        if record_steps:
+            steps.append(coloring.copy())
 
     # Store the result in the template
-    res_obj['steps'] = steps
+    if record_steps:
+        res_obj['steps'] = steps
+    res_obj['coloring'] = coloring.copy()
     return res_obj
 
 
-def greedy_coloring(graph):
+def greedy_coloring(graph, record_steps=False):
     """
     Performs greedy coloring of the graph.
     :param graph: dict, adjacency list of the graph
@@ -86,8 +89,10 @@ def greedy_coloring(graph):
         while color in neighbor_colors:
             color += 1
         coloring[node] = color
-    steps.append(coloring.copy())
+    if record_steps:
+        steps.append(coloring.copy())
          
-
-    res_obj['steps'] = steps
+    if record_steps:
+        res_obj['steps'] = steps
+    res_obj['coloring'] = coloring.copy()
     return res_obj

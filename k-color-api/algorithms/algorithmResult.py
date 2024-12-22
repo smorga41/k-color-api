@@ -1,5 +1,7 @@
 algorithmResultTemplate = {
-        "chromatic_number": 0,
+        "chromatic_number": None,
+        "k": 0,
         "runtime (s)": 0,
-        "steps": []
+        "steps": [],
+        "coloring": []
     }
