@@ -104,6 +104,10 @@ class MongoDBManager:
         except Exception as e:
             print(f"An error occurred while fetching graphs: {e}")
             raise
+    
+    @timer
+    def get_custom_list(self):
+        
 
     @timer
     def create_indexes(self):

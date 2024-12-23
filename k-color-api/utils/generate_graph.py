@@ -102,25 +102,22 @@ def nodes_edges_to_graph(nodes: List[int], edges: List[Tuple[int, int]]) -> Dict
         graph[node2].append(node1)
     return graph
 
-def storeGraphinMongo(graph, graph_type, N, E, db_manager):
-    name = [graph_type, str(N), str(E), str(''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))]
+def storeGraphinMongo(graph, graph_type, N, E, db_manager, custom=False, name=None):
+    if not name:
+        name = [graph_type, str(N), str(E), str(''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))]
+        name = "_".join(name)
     graph_data = {
-        "name": "_".join(name),
+        "name": name,
+        "description": None,
         "format": "adjacency_list",
+        "custom": custom,
         "graph_type": graph_type,
         "N": N,
         "E": E,
+        "chromatic_number": None,
         "graph": graph
     }
-    db_manager.save_graph(graph_data)
 
-# Example usage:
-if __name__ == "__main__":
-    N = 1000  # Number of nodes
-    D = 0.02  # Density (adjusted to ensure enough edges for connectivity)
-    graph = generate_graph_nd(N, D)
-    print("Adjacency List Representation of the Graph:")
-    for node, neighbors in graph.items():
-        print(f"{node}: {neighbors}")
+    db_manager.save_graph(graph_data)
     
 

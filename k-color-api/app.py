@@ -120,6 +120,47 @@ def analyse_scalability():
             'message': f'Error occured while executing the {algorithm_name} algorithm: {str(e)} \n {traceback.format_exc()}'
         }), 500
 
+@app.route("/graphs/get_custom", methods=["GET"])
+def get_custom():
+    
+
+@app.route("/graphs/upload", methods=["POST"])
+def upload_graph():
+    data = request.get_json()
+
+
+
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    # Validate 'name'
+    name = data.get('name')
+    if not name or not isinstance(name, str) or not name.strip():
+        return jsonify({'error': "'name' is required and must be a non-empty string."}), 400
+
+    # Validate 'graph'
+    graph = data.get('graph')
+    if not graph or not isinstance(graph, dict):
+        return jsonify({'error': "'graph' is required and must be an object containing 'vertices' and 'edges'."}), 400
+
+    chromaticValue = data.get("chromatic_value")
+    if  chromaticValue and not isinstance(chromaticValue, int):
+        return jsonify({'error': "chromatic value must be an integer"})
+
+    try:
+        # Save the graph to MongoDB
+        graph_id = db_manager.save_graph(data)  # Assuming 'save_graph' returns the inserted ID
+        return jsonify({
+            'message': 'Graph uploaded successfully.',
+            'id': str(graph_id)
+        }), 201
+    except Exception as e:
+        return jsonify({
+            'error': f"An error occurred while saving the graph: {str(e)}"
+        }), 500
+
+
+
 
 
 
