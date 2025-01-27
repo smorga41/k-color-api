@@ -121,7 +121,27 @@ def analyse_scalability():
         }), 500
 
 @app.route("/graphs/get_custom", methods=["GET"])
-def get_custom():
+def get_custom_graphs():
+    """
+    GET /graphs/get_custom?search=<searchTerm>&page=<pageNum>&limit=<pageSize>
+    
+    Returns JSON with fields: 
+      - results: array of {id, name}
+      - total: total number of matching docs
+      - hasMore: whether there is another page
+    """
+    # Get query params (with defaults)
+    search = request.args.get('search', '', type=str)
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 10, type=int)
+
+    try:
+        data = db_manager.get_custom_graphs(search, page, limit)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({
+            'error': f'Could not retrieve custom graphs: {str(e)}'
+        }), 500
     
 
 @app.route("/graphs/upload", methods=["POST"])

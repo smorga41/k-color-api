@@ -52,9 +52,15 @@ def get_graphs_ne(graph_type, N, E, num_graphs, db_manager):
     
     return graphs
 
-def get_graph_custom(graph_name):
-    # TODO get graph by id
-    return
+def get_graph_custom(graph_id: str, db_manager):
+    """
+    Returns the 'graph' field from the MongoDB doc for a custom graph with the given _id.
+    Raises ValueError if not found.
+    """
+    doc = db_manager.get_graph_by_id(graph_id)
+    print("retreived doc", doc)
+    return doc['graph']
+
 
 
 def get_graphs_from_definitions(graph_definitions, db_manager):
@@ -65,9 +71,16 @@ def get_graphs_from_definitions(graph_definitions, db_manager):
             graphs.append( 
                 get_graphs(graph['type'], graph['nodes'], graph['edges'], graph['density'], 1, db_manager)[0]
             )
+            print("Generated graph", graphs[-1])
         
         else:
-            #TODO implement getting graph from database
-            print("custom not implemented yet")
+            graph_id = graph.get('customGraphId')
+            if not graph_id:
+                raise ValueError("Missing 'customGraphId' for custom graph definition.")
+
+            # Use the new helper
+            custom_graph = get_graph_custom(graph_id, db_manager)
+            graphs.append(custom_graph)
+            print("custom graph", graphs[-1])
 
     return graphs

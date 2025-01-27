@@ -76,9 +76,10 @@ def greedy_coloring(graph, record_steps=False):
     nodes = list(graph.keys())
     for node in nodes:
         # Get colors used by neighbors
+        # TODO use sets and intersection to make this more efficeint
         neighbor_colors = set()
         for neighbor in graph[node]:
-            if neighbor in coloring:
+            if str(neighbor) in coloring.keys():
                 neighbor_colors.add(coloring[neighbor])
             elif neighbor not in graph:
                 # Node not in graph, ignore or handle as needed

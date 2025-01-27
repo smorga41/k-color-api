@@ -1,4 +1,5 @@
 import os
+from bson import ObjectId
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
@@ -106,8 +107,77 @@ class MongoDBManager:
             raise
     
     @timer
-    def get_custom_list(self):
-        
+    def get_graph_by_id(self, graph_id: str) -> dict:
+        """
+        Finds a single graph document by its MongoDB _id (as string).
+        Returns a dict with the entire document (or projection if needed).
+        Raises ValueError if not found or invalid ObjectId.
+        """
+        if self.collection is None:
+            raise Exception("MongoDB collection is not initialized.")
+
+        try:
+            _id = ObjectId(graph_id)  
+        except Exception as e:
+            raise ValueError(f"Invalid graph_id '{graph_id}': {str(e)}")
+
+        try:
+            # Project only the fields you need; for example 'graph' and 'name'
+            doc = self.collection.find_one({"_id": _id}, {"graph": 1, "name": 1, "N": 1, "E": 1})
+            print("found doc", doc)
+            
+            if not doc:
+                raise ValueError(f"No graph found with _id={graph_id}")
+            
+            return doc
+        except Exception as e:
+            print(f"An error occurred while finding graph by id: {graph_id}. Error: {e}")
+            raise
+    
+    @timer
+    def get_custom_graphs(self, search: str, page: int, limit: int) -> dict:
+        """
+        Returns paginated list of custom graphs (only {custom: true}),
+        optionally filtered by name with a case-insensitive regex search.
+        Each result includes only '_id' and 'name'.
+        """
+        if self.collection is None:
+            raise Exception("MongoDB collection is not initialized.")
+
+        # Base query: only custom graphs
+        query = {"custom": True}
+
+        # If a search term is provided, filter by name (case-insensitive)
+        if search:
+            query["name"] = {"$regex": search, "$options": "i"}
+
+        total = self.collection.count_documents(query)
+
+        # Pagination
+        skip = (page - 1) * limit
+
+        # Only project out the fields we need to display
+        projection = {"_id": 1, "name": 1}
+
+        try:
+            cursor = self.collection.find(query, projection).skip(skip).limit(limit)
+            results = []
+            for doc in cursor:
+                results.append({
+                    "id": str(doc["_id"]),
+                    "name": doc["name"]
+                })
+            
+            has_more = (page * limit) < total
+
+            return {
+                "results": results,
+                "total": total,
+                "hasMore": has_more
+            }
+        except Exception as e:
+            print(f"An error occurred while fetching custom graphs: {e}")
+            raise
 
     @timer
     def create_indexes(self):
