@@ -4,6 +4,8 @@ import traceback
 
 from database.db_manager import MongoDBManager
 from algorithms.greedy import greedy_coloring, greedy_bfs_coloring
+from algorithms.dsatur import dsatur_coloring
+from algorithms.recursiveLargestFirst import rlf_coloring
 from algorithms.backtrack import find_min_k_backtracking
 from algorithms.chromaticPolynomial import compute_chromatic_polynomial
 
@@ -37,6 +39,7 @@ def color_graph():
     valid_algorithms = {
         "greedy": greedy_coloring,
         "greedy_bfs": greedy_bfs_coloring,
+        "dsatur": dsatur_coloring,
         "backtrack": find_min_k_backtracking,
         "deletion_contraction": compute_chromatic_polynomial
     }
@@ -51,6 +54,46 @@ def color_graph():
     return jsonify({
         'result': coloring_result
     }), 200
+
+@app.route('/color-graph-config/', methods=['POST'])
+def color_graph_from_config():
+    data = request.get_json()
+    algorithm_name = data.get('algorithm', 'greedy')
+    graph_config = data.get('graphConfig', {})
+
+    # Validate the incoming algorithm name (similar to validate_algorithm_name)
+    valid_algorithms = {
+        "greedy": greedy_coloring,
+        "greedy_bfs": greedy_bfs_coloring,
+        "dsatur": dsatur_coloring,
+        "rlf": rlf_coloring,
+        "backtrack": find_min_k_backtracking,
+        "deletion_contraction": compute_chromatic_polynomial
+    }
+    if algorithm_name not in valid_algorithms:
+        return jsonify({'message': f'Invalid algorithm: {algorithm_name}'}), 400
+
+    try:
+        # Generate/retrieve the graph from the single config
+        generated_graphs = get_graphs_from_definitions([graph_config], db_manager)
+        if not generated_graphs:
+            return jsonify({
+                'message': 'No graph could be generated from the provided config.'
+            }), 400
+
+        # We only expect a single graph from the single config
+        graph = generated_graphs[0]
+
+        # Run the chosen algorithm on that graph
+        coloring_result = valid_algorithms[algorithm_name](graph, True)
+
+    except Exception as e:
+        return jsonify({
+            'message': f'Error occurred while generating or coloring the graph: {str(e)}\n{traceback.format_exc()}'
+        }), 500
+
+    return jsonify({'result': coloring_result, 
+                    'graph': graph}), 200
 
 @app.route('/analysis', methods=['POST'])
 def general_analysis():
