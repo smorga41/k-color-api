@@ -70,3 +70,49 @@ def contract_edge(adj_list, u, v):
 
     return adj_list_contracted
 
+def evaluate_chromatic_polynomial(coefficients, k):
+    """
+    Evaluates the chromatic polynomial P(G, k) for a given k using Horner's method.
+
+    Parameters:
+    - coefficients (list of int/float): Coefficients of the chromatic polynomial,
+      ordered from the highest degree term to the constant term.
+    - k (int): The number of colors to evaluate the polynomial at.
+
+    Returns:
+    - int/float: The value of P(G, k).
+    """
+    result = 0
+    for coef in coefficients:
+        result = result * k + coef
+    return result
+
+def compute_chromatic_number(coefficients, max_k=None):
+    """
+    Computes the chromatic number χ(G) from the chromatic polynomial coefficients.
+
+    Parameters:
+    - coefficients (list of int/float): Coefficients of the chromatic polynomial,
+      ordered from the highest degree term to the constant term.
+    - max_k (int, optional): The maximum value of k to evaluate to prevent infinite loops.
+      Defaults to the number of coefficients (degree of the polynomial).
+
+    Returns:
+    - int: The chromatic number χ(G).
+    
+    Raises:
+    - ValueError: If the chromatic number cannot be determined within the specified range.
+    """
+    # If max_k is not provided, set it to the degree of the polynomial
+    polynomial_evaluation = []
+
+    if max_k is None:
+        max_k = len(coefficients)
+    
+    for k in range(1, max_k + 1):
+        Pk = evaluate_chromatic_polynomial(coefficients, k)
+        polynomial_evaluation.append(Pk)
+        if Pk > 0:
+            return k, polynomial_evaluation
+    
+    raise ValueError(f"Chromatic number could not be determined for k up to {max_k}.")

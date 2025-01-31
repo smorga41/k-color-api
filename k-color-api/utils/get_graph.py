@@ -37,7 +37,7 @@ def get_graphs_ne(graph_type, N, E, num_graphs, db_manager):
         remaining_graphs = num_graphs - existing_count
 
         for graph in existing_graphs:
-            graphs.append(graph['graph'])
+            graphs.append(graph)
 
     except Exception as e:
         print(f"An error occured fetching existing graphs: {e} \n {traceback.format_exc()}")
@@ -58,8 +58,7 @@ def get_graph_custom(graph_id: str, db_manager):
     Raises ValueError if not found.
     """
     doc = db_manager.get_graph_by_id(graph_id)
-    print("retreived doc", doc)
-    return doc['graph']
+    return doc
 
 
 

@@ -7,7 +7,7 @@ from algorithms.greedy import greedy_coloring, greedy_bfs_coloring
 from algorithms.dsatur import dsatur_coloring
 from algorithms.recursiveLargestFirst import rlf_coloring
 from algorithms.backtrack import find_min_k_backtracking
-from algorithms.chromaticPolynomial import compute_chromatic_polynomial
+from algorithms.chromaticPolynomial import compute_chromatic_polynomial, compute_chromatic_number
 
 from analysis.analyse import run_coloring_experiment
 from analysis.scaling import analyse_algorithm_scalability
@@ -75,14 +75,15 @@ def color_graph_from_config():
 
     try:
         # Generate/retrieve the graph from the single config
-        generated_graphs = get_graphs_from_definitions([graph_config], db_manager)
-        if not generated_graphs:
+        generated_graph = get_graphs_from_definitions([graph_config], db_manager)
+        if not generated_graph:
             return jsonify({
                 'message': 'No graph could be generated from the provided config.'
             }), 400
 
         # We only expect a single graph from the single config
-        graph = generated_graphs[0]
+        graph = generated_graph[0]['graph']
+        print(graph)
 
         # Run the chosen algorithm on that graph
         coloring_result = valid_algorithms[algorithm_name](graph, True)
@@ -105,6 +106,7 @@ def get_chromatic_polynomial():
     try:
         # Generate/retrieve the graph from the single config
         generated_graphs = get_graphs_from_definitions([graph_config], db_manager)
+        print("generated Graphs", generated_graphs)
         if not generated_graphs:
             return jsonify({
                 'message': 'No graph could be generated from the provided config.'
@@ -113,16 +115,26 @@ def get_chromatic_polynomial():
         # We only expect a single graph from the single config
         graph = generated_graphs[0]
 
+        # compute graph stats
+
         # Run the chosen algorithm on that graph
-        coloring_result = compute_chromatic_polynomial(graph)
+        chromatic_polynomial = compute_chromatic_polynomial(graph['graph'])
+        chromatic_number, polynomial_evaluation = compute_chromatic_number(chromatic_polynomial)
+
+        # update chromatic number in database
+        db_manager.upsert_field(graph['_id'], "chromatic_number", chromatic_number)
+
+
 
     except Exception as e:
         return jsonify({
             'message': f'Error occurred while generating or coloring the graph: {str(e)}\n{traceback.format_exc()}'
         }), 500
 
-    return jsonify({'result': coloring_result, 
-                    'graph': graph}), 200
+    return jsonify({'chromatic_polynomial': chromatic_polynomial,
+                    'chromatic_polynomial_evaluation': polynomial_evaluation,  
+                    'chromatic_number': chromatic_number,
+                    'graph': graph['graph']}), 200
 
 @app.route('/analysis', methods=['POST'])
 def general_analysis():
@@ -148,6 +160,9 @@ def general_analysis():
 
     # Generate Graphs
     graphs = get_graphs_from_definitions(graph_definitions, db_manager)
+
+    for graph in graphs:
+        graph = graph['graph']
 
     # Run experiement
     try:

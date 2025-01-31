@@ -71,8 +71,8 @@ def generate_graph_ne(N: int, E: int, db_manager) -> Dict[int, List[int]]:
 
     edges = list(edges_set)
     graph = nodes_edges_to_graph(nodes, edges)
-    storeGraphinMongo(graph, "random", N, E, db_manager)
-    return graph
+    saved_id = storeGraphinMongo(graph, "random", N, E, db_manager)
+    return {"_id": saved_id, "graph": graph}
 
 def generate_mst(N: int) -> Tuple[List[int], List[Tuple[int, int]]]:
     """
@@ -118,6 +118,7 @@ def storeGraphinMongo(graph, graph_type, N, E, db_manager, custom=False, name=No
         "graph": graph
     }
 
-    db_manager.save_graph(graph_data)
+    saved_id = db_manager.save_graph(graph_data)
+    return saved_id
     
 

@@ -76,6 +76,7 @@ class MongoDBManager:
         try:
             result = self.collection.insert_one(graph_data)
             print(f"Graph {graph_data['name']} saved with _id: {result.inserted_id}")
+            return result.inserted_id
         except Exception as e:
             print(f"An error occurred while saving the graph: {e}")
             raise
@@ -95,7 +96,8 @@ class MongoDBManager:
             "E": E
         }
         projection = {
-            "graph": 1
+            "graph": 1,
+            "id": 1
         }
 
         try:
@@ -123,15 +125,73 @@ class MongoDBManager:
 
         try:
             # Project only the fields you need; for example 'graph' and 'name'
-            doc = self.collection.find_one({"_id": _id}, {"graph": 1, "name": 1, "N": 1, "E": 1})
-            print("found doc", doc)
+            doc = self.collection.find_one({"_id": _id}, {"graph": 1, "name": 1, "N": 1, "E": 1, "_id": 1})
             
             if not doc:
                 raise ValueError(f"No graph found with _id={graph_id}")
+            doc['_id'] = doc['_id'].__str__()
+            print("found doc", doc)
             
             return doc
         except Exception as e:
             print(f"An error occurred while finding graph by id: {graph_id}. Error: {e}")
+            raise
+    
+    @timer
+    def upsert_field(self, graph_id: str, field_name: str, field_value, upsert: bool = False) -> Dict:
+        """
+        Upserts a field in the document with the given graph_id.
+
+        Parameters:
+            graph_id (str): The string representation of the MongoDB ObjectId.
+            field_name (str): The name of the field to upsert.
+            field_value (Any): The value to set for the field.
+            upsert (bool): If True, creates the document if it doesn't exist.
+
+        Returns:
+            dict: A dictionary containing the result of the update operation.
+
+        Raises:
+            ValueError: If the graph_id is invalid or no document is found (when upsert=False).
+            Exception: If the MongoDB operation fails.
+        """
+        if self.collection is None:
+            raise Exception("MongoDB collection is not initialized.")
+
+        try:
+            # Convert graph_id string to ObjectId
+            _id = ObjectId(graph_id)
+        except Exception as e:
+            raise ValueError(f"Invalid graph_id '{graph_id}': {str(e)}")
+
+        try:
+            # Perform the upsert operation
+            result = self.collection.update_one(
+                {"_id": _id},
+                {"$set": {field_name: field_value}},
+                upsert=upsert
+            )
+
+            # If no document was matched and upsert=False, raise an error
+            if result.matched_count == 0 and not upsert:
+                raise ValueError(f"No graph found with _id={graph_id}")
+
+            # Prepare the result dictionary
+            operation_result = {
+                "matched_count": result.matched_count,
+                "modified_count": result.modified_count,
+                "upserted_id": str(result.upserted_id) if result.upserted_id else None
+            }
+
+            if result.upserted_id:
+                print(f"Document inserted with _id: {result.upserted_id}")
+            else:
+                print(f"Field '{field_name}' updated to '{field_value}' for graph with _id={graph_id}.")
+
+            return operation_result
+
+        except Exception as e:
+            print(f"An error occurred while upserting field: {e}")
             raise
     
     @timer

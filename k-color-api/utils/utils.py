@@ -51,3 +51,62 @@ def DE_to_NE(E, D):
         required_nodes += 1
 
     return required_nodes, E
+
+def calculate_graph_metrics(adjacency_dict):
+    """
+    Calculates various graph metrics from an adjacency dictionary.
+
+    Parameters:
+    - adjacency_dict (dict): Adjacency list of the graph where keys are node identifiers
+      and values are lists of adjacent nodes.
+
+    Returns:
+    - dict: A dictionary containing metrics like number of nodes, edges, density,
+      average edges per node, degree distribution, and connected components.
+    """
+    nodes = len(adjacency_dict)
+    edges_set = set()
+    total_degree = 0
+    degree_distribution = {}
+
+    for node, neighbors in adjacency_dict.items():
+        degree = len(neighbors)
+        degree_distribution[node] = degree
+        total_degree += degree
+        for neighbor in neighbors:
+            edge = tuple(sorted([node, neighbor]))
+            edges_set.add(edge)
+
+    edges = len(edges_set)
+    density = (2 * edges) / (nodes * (nodes - 1)) if nodes > 1 else 0
+    average_edges_per_node = total_degree / nodes if nodes > 0 else 0
+
+    connected_components = num_connected_components(adjacency_dict)
+
+    return {
+        'nodes': nodes,
+        'edges': edges,
+        'density': round(density, 4),
+        'average_edges_per_node': round(average_edges_per_node, 2),
+        'degree_distribution': degree_distribution,
+        'connected_components': connected_components
+    }
+
+def num_connected_components(adjacency_dict):
+    # Calculate connected components using DFS
+    visited = set()
+    connected_components = 0
+
+    def dfs(current_node):
+        stack = [current_node]
+        while stack:
+            node = stack.pop()
+            if node not in visited:
+                visited.add(node)
+                stack.extend([n for n in adjacency_dict[node] if n not in visited])
+
+    for node in adjacency_dict:
+        if node not in visited:
+            dfs(node)
+            connected_components += 1
+    return connected_components
