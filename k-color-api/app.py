@@ -95,6 +95,35 @@ def color_graph_from_config():
     return jsonify({'result': coloring_result, 
                     'graph': graph}), 200
 
+@app.route('/get-chromatic-polynomial', methods=['POST'])
+def get_chromatic_polynomial():
+    data = request.get_json()
+    graph_config = data.get('graphConfig', {})
+
+    # Validate the incoming algorithm name (similar to validate_algorithm_name)
+
+    try:
+        # Generate/retrieve the graph from the single config
+        generated_graphs = get_graphs_from_definitions([graph_config], db_manager)
+        if not generated_graphs:
+            return jsonify({
+                'message': 'No graph could be generated from the provided config.'
+            }), 400
+
+        # We only expect a single graph from the single config
+        graph = generated_graphs[0]
+
+        # Run the chosen algorithm on that graph
+        coloring_result = compute_chromatic_polynomial(graph)
+
+    except Exception as e:
+        return jsonify({
+            'message': f'Error occurred while generating or coloring the graph: {str(e)}\n{traceback.format_exc()}'
+        }), 500
+
+    return jsonify({'result': coloring_result, 
+                    'graph': graph}), 200
+
 @app.route('/analysis', methods=['POST'])
 def general_analysis():
     """
