@@ -161,8 +161,8 @@ def general_analysis():
     # Generate Graphs
     graphs = get_graphs_from_definitions(graph_definitions, db_manager)
 
-    for graph in graphs:
-        graph = graph['graph']
+    for i, graph in enumerate(graphs):
+        graphs[i] = graph['graph']
 
     # Run experiement
     try:
