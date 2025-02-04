@@ -125,7 +125,7 @@ class MongoDBManager:
 
         try:
             # Project only the fields you need; for example 'graph' and 'name'
-            doc = self.collection.find_one({"_id": _id}, {"graph": 1, "name": 1, "N": 1, "E": 1, "_id": 1})
+            doc = self.collection.find_one({"_id": _id}, {"graph": 1, "name": 1, "N": 1, "E": 1, "_id": 1, "chromatic_number": 1, "description": 1})
             
             if not doc:
                 raise ValueError(f"No graph found with _id={graph_id}")

@@ -107,7 +107,6 @@ def rlf_coloring(graph, record_steps=False):
     max_color_used = current_color
     
     # Populate result object
-    res_obj["chromatic_number"] = max_color_used
     res_obj["k"] = max_color_used
     res_obj["runtime (s)"] = end_time - start_time
     res_obj["steps"] = steps if record_steps else []

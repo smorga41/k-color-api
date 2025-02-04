@@ -83,10 +83,12 @@ def color_graph_from_config():
 
         # We only expect a single graph from the single config
         graph = generated_graph[0]['graph']
-        print(graph)
 
         # Run the chosen algorithm on that graph
         coloring_result = valid_algorithms[algorithm_name](graph, True)
+        # add extra infromation to result
+        coloring_result.update({"chromatic_number": generated_graph[0]['chromatic_number']})
+        coloring_result.update({"graph_description": generated_graph[0]['description']})
 
     except Exception as e:
         return jsonify({
