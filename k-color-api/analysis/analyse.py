@@ -64,11 +64,18 @@ def run_coloring_experiment(graphs, algorithm_names, repeats):
 
 
     for graph_idx, graph in enumerate(graphs):
+        if "chromatic_number" in graph.keys():     
+            chromatic_number = graph['chromatic_number']
+        else:
+            chromatic_number = None
         graph_entry = {
             "graph_id": graph_idx,
-            "graph_data": graph,
+            "graph_data": graph['graph'],
+            "chromatic_number": chromatic_number,
             "algorithms": []
         }
+        graph_adj = graph['graph']
+        print("graph_adj", graph_adj)
         
         for algorithm_name in algorithm_names:
             algorithm = algorithms[algorithm_name]
@@ -79,10 +86,10 @@ def run_coloring_experiment(graphs, algorithm_names, repeats):
 
             for run_id in range(repeats):
                 # Measure runtime
-                res_obj, runtime = measure_runtime(algorithm, graph)
+                res_obj, runtime = measure_runtime(algorithm, graph_adj)
                 k = len(set(res_obj['coloring'].values()))
                 # Measure memory
-                res_obj_mem, peak_memory = measure_memory(algorithm, graph)
+                res_obj_mem, peak_memory = measure_memory(algorithm, graph_adj)
                 
                 # assume coloring and k are consistent from both runtime and memory calls
                 # If they differ, prioritize runtime call results.

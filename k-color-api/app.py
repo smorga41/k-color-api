@@ -8,6 +8,8 @@ from algorithms.dsatur import dsatur_coloring
 from algorithms.recursiveLargestFirst import rlf_coloring
 from algorithms.backtrack import find_min_k_backtracking
 from algorithms.chromaticPolynomial import compute_chromatic_polynomial, compute_chromatic_number
+from algorithms.metropolis import metropolis_coloring
+from algorithms.genetic import genetic_coloring
 
 from analysis.analyse import run_coloring_experiment
 from analysis.scaling import analyse_algorithm_scalability
@@ -68,7 +70,9 @@ def color_graph_from_config():
         "dsatur": dsatur_coloring,
         "rlf": rlf_coloring,
         "backtrack": find_min_k_backtracking,
-        "deletion_contraction": compute_chromatic_polynomial
+        "deletion_contraction": compute_chromatic_polynomial,
+        "metropolis": metropolis_coloring,
+        "ga_coloring": genetic_coloring
     }
     if algorithm_name not in valid_algorithms:
         return jsonify({'message': f'Invalid algorithm: {algorithm_name}'}), 400
@@ -87,8 +91,16 @@ def color_graph_from_config():
         # Run the chosen algorithm on that graph
         coloring_result = valid_algorithms[algorithm_name](graph, True)
         # add extra infromation to result
-        coloring_result.update({"chromatic_number": generated_graph[0]['chromatic_number']})
-        coloring_result.update({"graph_description": generated_graph[0]['description']})
+        chromatic_number = None
+        if "chromatic_number" in generated_graph[0].keys():
+            chromatic_number = generated_graph[0]['chromatic_number']
+        
+        description = ""
+        if "description" in generated_graph[0].keys():
+            description = generated_graph[0]['description']
+        
+        coloring_result.update({"chromatic_number": chromatic_number})
+        coloring_result.update({"graph_description": description})
 
     except Exception as e:
         return jsonify({
@@ -108,7 +120,7 @@ def get_chromatic_polynomial():
     try:
         # Generate/retrieve the graph from the single config
         generated_graphs = get_graphs_from_definitions([graph_config], db_manager)
-        print("generated Graphs", generated_graphs)
+        # print("generated Graphs", generated_graphs)
         if not generated_graphs:
             return jsonify({
                 'message': 'No graph could be generated from the provided config.'
@@ -163,9 +175,6 @@ def general_analysis():
     # Generate Graphs
     graphs = get_graphs_from_definitions(graph_definitions, db_manager)
 
-    for i, graph in enumerate(graphs):
-        graphs[i] = graph['graph']
-
     # Run experiement
     try:
         result = run_coloring_experiment(graphs, algorithm_names, repeats)
@@ -208,6 +217,129 @@ def analyse_scalability():
         return jsonify({
             'message': f'Error occured while executing the {algorithm_name} algorithm: {str(e)} \n {traceback.format_exc()}'
         }), 500
+    
+
+@app.route('/solve-sudoku', methods=['POST'])
+def solve_sudoku():
+    """
+    Expected JSON payload:
+    {
+      "puzzle": "050703060007000800000816000000030000005000100730040086906000204840572093000409000",
+      "algorithm": "backtrack"  // or "greedy", "dsatur", etc.
+    }
+    In the puzzle string, use '0' to denote empty cells.
+    """
+    data = request.get_json()
+    puzzle_str = data.get('puzzle')
+    algorithm_name = data.get('algorithm', 'backtrack')  # default algorithm
+
+    # Validate the puzzle format
+    if not puzzle_str or len(puzzle_str) != 81:
+        return jsonify({"message": "Invalid puzzle. Must be exactly 81 characters long."}), 400
+
+    # Convert the puzzle string into a 9x9 board (list of lists) of integers.
+    board = []
+    for i in range(9):
+        row = []
+        for j in range(9):
+            ch = puzzle_str[i * 9 + j]
+            if ch == '0' or ch == '.':
+                row.append(0)
+            elif ch.isdigit():
+                row.append(int(ch))
+            else:
+                return jsonify({"message": "Invalid character in puzzle. Use digits or 0/."}), 400
+        board.append(row)
+
+    # Construct the Sudoku graph.
+    # Each cell is a node with id "r{i}c{j}".
+    # There is an edge between two nodes if they are in the same row, column, or 3x3 block.
+    sudoku_graph = {}
+    for i in range(9):
+        for j in range(9):
+            node_id = f"r{i}c{j}"
+            sudoku_graph[node_id] = set()
+
+    for i in range(9):
+        for j in range(9):
+            node_id = f"r{i}c{j}"
+            # Row: all cells in row i (except itself)
+            for j2 in range(9):
+                if j2 != j:
+                    sudoku_graph[node_id].add(f"r{i}c{j2}")
+            # Column: all cells in column j (except itself)
+            for i2 in range(9):
+                if i2 != i:
+                    sudoku_graph[node_id].add(f"r{i2}c{j}")
+            # Block: cells in the same 3x3 sub-grid.
+            bi = (i // 3) * 3
+            bj = (j // 3) * 3
+            for di in range(3):
+                for dj in range(3):
+                    ni = bi + di
+                    nj = bj + dj
+                    if ni == i and nj == j:
+                        continue
+                    sudoku_graph[node_id].add(f"r{ni}c{nj}")
+
+    # Convert each set to a list for JSON serialization.
+    for key in sudoku_graph:
+        sudoku_graph[key] = list(sudoku_graph[key])
+
+    # Build the initial assignment from the pre-filled cells.
+    # We use a 0-indexed color scheme (i.e. digit 1 is color 0, digit 9 is color 8).
+    initial_assignment = {}
+    for i in range(9):
+        for j in range(9):
+            if board[i][j] != 0:
+                initial_assignment[f"r{i}c{j}"] = board[i][j] - 1
+
+    # Define the valid sudoku algorithms (reuse your graph coloring algorithms).
+    valid_sudoku_algorithms = {
+        "backtracking": find_min_k_backtracking,
+        "greedy": greedy_coloring,
+        "dsatur": dsatur_coloring,
+        # You can add others as needed.
+    }
+
+    if algorithm_name not in valid_sudoku_algorithms:
+        return jsonify({"message": f"Invalid algorithm: {algorithm_name}"}), 400
+
+    try:
+        solve_algorithm = valid_sudoku_algorithms[algorithm_name]
+        # Call the selected algorithm.
+        # (Assuming the algorithm functions can accept an initial assignment as a second argument.
+        # If not, you might need to modify them to enforce pre-assigned values.)
+        coloring_result = solve_algorithm(sudoku_graph, initial_assignment=initial_assignment, record_steps = True)
+    except Exception as e:
+        return jsonify({
+            "message": f"Error occurred while solving Sudoku: {str(e)}\n{traceback.format_exc()}"
+        }), 500
+
+    # Expect the coloring_result to include a "steps" array,
+    # where the first (or only) element is a mapping { cell_id: color_index, ... }.
+    final_assignment = coloring_result.get("steps", [{}])[0]
+
+    # Build the solved Sudoku board from the final assignment.
+    solved_board = [[0 for _ in range(9)] for _ in range(9)]
+    for i in range(9):
+        for j in range(9):
+            cell_id = f"r{i}c{j}"
+            if cell_id in final_assignment:
+                solved_board[i][j] = final_assignment[cell_id] + 1
+            else:
+                solved_board[i][j] = board[i][j]
+
+    # Package the result.
+    result = {
+        "solution": solved_board,
+        "chromatic_number": coloring_result.get("chromatic_number", 9),
+        "steps": coloring_result.get("steps", [final_assignment]),
+        "k": coloring_result.get("k", 9),
+        "algorithm": algorithm_name
+    }
+
+    return jsonify({"result": result, "graph": sudoku_graph}), 200
 
 @app.route("/graphs/get_custom", methods=["GET"])
 def get_custom_graphs():

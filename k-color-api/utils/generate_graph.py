@@ -72,7 +72,7 @@ def generate_graph_ne(N: int, E: int, db_manager) -> Dict[int, List[int]]:
     edges = list(edges_set)
     graph = nodes_edges_to_graph(nodes, edges)
     saved_id = storeGraphinMongo(graph, "random", N, E, db_manager)
-    return {"_id": saved_id, "graph": graph, "chromatic_number": None}
+    return {"_id": saved_id, "graph": graph, "chromatic_number": None, "Description": f"A randomly generated graph with {N} nodes and {E} edges"}
 
 def generate_mst(N: int) -> Tuple[List[int], List[Tuple[int, int]]]:
     """
