@@ -5,7 +5,9 @@ from algorithms.dsatur import dsatur_coloring
 from algorithms.recursiveLargestFirst import rlf_coloring
 from algorithms.backtrack import find_min_k_backtracking
 from algorithms.chromaticPolynomial import compute_chromatic_polynomial
-
+from algorithms.metropolis import metropolis_coloring
+from algorithms.genetic import genetic_coloring
+from algorithms.simulatedAnnealing import simulated_annealing_coloring
 def valid_algorithms():
     return ({
         "greedy": greedy_coloring,
@@ -13,7 +15,10 @@ def valid_algorithms():
         "dsatur": dsatur_coloring,
         "rlf": rlf_coloring,
         "backtrack": find_min_k_backtracking,
-        "deletion_contraction": compute_chromatic_polynomial
+        "deletion_contraction": compute_chromatic_polynomial,
+        "metropolis": metropolis_coloring,
+        "ga_coloring": genetic_coloring,
+        "simulated_annealing": simulated_annealing_coloring
     })
 
 def validate_graph(graph):

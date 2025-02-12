@@ -10,6 +10,7 @@ from algorithms.backtrack import find_min_k_backtracking
 from algorithms.chromaticPolynomial import compute_chromatic_polynomial, compute_chromatic_number
 from algorithms.metropolis import metropolis_coloring
 from algorithms.genetic import genetic_coloring
+from algorithms.simulatedAnnealing import simulated_annealing_coloring
 
 from analysis.analyse import run_coloring_experiment
 from analysis.scaling import analyse_algorithm_scalability
@@ -72,7 +73,8 @@ def color_graph_from_config():
         "backtrack": find_min_k_backtracking,
         "deletion_contraction": compute_chromatic_polynomial,
         "metropolis": metropolis_coloring,
-        "ga_coloring": genetic_coloring
+        "ga_coloring": genetic_coloring,
+        "simulated_annealing": simulated_annealing_coloring
     }
     if algorithm_name not in valid_algorithms:
         return jsonify({'message': f'Invalid algorithm: {algorithm_name}'}), 400

@@ -70,7 +70,6 @@ def get_graphs_from_definitions(graph_definitions, db_manager):
             graphs.append( 
                 get_graphs(graph['type'], graph['nodes'], graph['edges'], graph['density'], 1, db_manager)[0]
             )
-            print("Generated graph", graphs[-1])
         
         else:
             graph_id = graph.get('customGraphId')
@@ -80,6 +79,5 @@ def get_graphs_from_definitions(graph_definitions, db_manager):
             # Use the new helper
             custom_graph = get_graph_custom(graph_id, db_manager)
             graphs.append(custom_graph)
-            print("custom graph", graphs[-1])
 
     return graphs
