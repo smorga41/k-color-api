@@ -2,7 +2,7 @@ import time
 from collections import defaultdict
 from .algorithmResult import algorithmResultTemplate
 
-def dsatur_coloring(graph, record_steps=False, initial_assignment=None):
+def dsatur_coloring(graph, record_steps=False, initial_assignment=None, k = None):
     """
     Performs graph coloring using the DSATUR (Degree of Saturation) heuristic.
     Optionally accepts an initial coloring (a dict mapping node -> color) that will be
@@ -12,6 +12,7 @@ def dsatur_coloring(graph, record_steps=False, initial_assignment=None):
     :param record_steps: bool, if True, record partial colorings at each assignment.
     :param initial_coloring: dict or None, optional pre-assigned colors (e.g. {node: color, ...}).
                              Colors should be positive integers. Nodes not provided will be colored.
+    :param k irrelevent only there for compatability with graph coloring
     :return: a dict (based on algorithmResultTemplate) with keys:
              "chromatic_number", "k", "runtime (s)", "steps", "coloring"
     """

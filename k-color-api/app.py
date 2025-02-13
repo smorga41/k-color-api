@@ -75,7 +75,7 @@ def color_graph_from_config():
         graph = generated_graph[0]['graph']
 
         # Run the chosen algorithm on that graph
-        coloring_result = valid_algos[algorithm_name](graph, True)
+        coloring_result = valid_algos[algorithm_name](graph, record_steps = True)
         # add extra infromation to result
         chromatic_number = None
         if "chromatic_number" in generated_graph[0].keys():
@@ -291,7 +291,7 @@ def solve_sudoku():
         # Call the selected algorithm.
         # (Assuming the algorithm functions can accept an initial assignment as a second argument.
         # If not, you might need to modify them to enforce pre-assigned values.)
-        coloring_result = solve_algorithm(sudoku_graph, initial_assignment=initial_assignment, record_steps = True)
+        coloring_result = solve_algorithm(sudoku_graph, initial_assignment=initial_assignment, record_steps = True, k=9)
     except Exception as e:
         return jsonify({
             "message": f"Error occurred while solving Sudoku: {str(e)}\n{traceback.format_exc()}"

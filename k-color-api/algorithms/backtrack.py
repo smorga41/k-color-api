@@ -86,9 +86,8 @@ def find_min_k_backtracking(graph, k=1, record_steps=False, initial_assignment=N
             k = max_initial
     else:
         coloring = {}
-
+    steps_list = []
     while True:
-        steps_list = [] if record_steps else None
         # Attempt to color the graph starting from the current (possibly pre-colored) assignment.
         if backtrack_coloring(0, graph, k, coloring, nodes_ordered, steps_list, record_steps):
             res_obj['chromatic_number'] = k
