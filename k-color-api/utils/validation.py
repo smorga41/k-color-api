@@ -4,6 +4,7 @@ from algorithms.greedy import greedy_coloring, greedy_bfs_coloring
 from algorithms.dsatur import dsatur_coloring
 from algorithms.recursiveLargestFirst import rlf_coloring
 from algorithms.backtrack import find_min_k_backtracking
+from algorithms.backtrackDsatur import find_min_k_backtracking_dsatur
 from algorithms.chromaticPolynomial import compute_chromatic_polynomial
 from algorithms.metropolis import metropolis_coloring
 from algorithms.genetic import genetic_coloring
@@ -14,7 +15,8 @@ def valid_algorithms():
         "greedy_bfs": greedy_bfs_coloring,
         "dsatur": dsatur_coloring,
         "rlf": rlf_coloring,
-        "backtrack": find_min_k_backtracking,
+        "backtracking": find_min_k_backtracking,
+        "backtracking_dsat": find_min_k_backtracking_dsatur,
         "deletion_contraction": compute_chromatic_polynomial,
         "metropolis": metropolis_coloring,
         "ga_coloring": genetic_coloring,
