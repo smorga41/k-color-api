@@ -39,13 +39,7 @@ def color_graph():
     if validate_algorithm_name(algorithm_name) is not True:
         return validate_algorithm_name(algorithm_name)
 
-    valid_algorithms = {
-        "greedy": greedy_coloring,
-        "greedy_bfs": greedy_bfs_coloring,
-        "dsatur": dsatur_coloring,
-        "backtrack": find_min_k_backtracking,
-        "deletion_contraction": compute_chromatic_polynomial
-    }
+    valid_algorithms = valid_algorithms()
 
     try:
         coloring_result = valid_algorithms[algorithm_name](graph)
@@ -65,18 +59,8 @@ def color_graph_from_config():
     graph_config = data.get('graphConfig', {})
 
     # Validate the incoming algorithm name (similar to validate_algorithm_name)
-    valid_algorithms = {
-        "greedy": greedy_coloring,
-        "greedy_bfs": greedy_bfs_coloring,
-        "dsatur": dsatur_coloring,
-        "rlf": rlf_coloring,
-        "backtrack": find_min_k_backtracking,
-        "deletion_contraction": compute_chromatic_polynomial,
-        "metropolis": metropolis_coloring,
-        "ga_coloring": genetic_coloring,
-        "simulated_annealing": simulated_annealing_coloring
-    }
-    if algorithm_name not in valid_algorithms:
+    valid_algos = valid_algorithms()
+    if algorithm_name not in valid_algos:
         return jsonify({'message': f'Invalid algorithm: {algorithm_name}'}), 400
 
     try:
@@ -91,7 +75,7 @@ def color_graph_from_config():
         graph = generated_graph[0]['graph']
 
         # Run the chosen algorithm on that graph
-        coloring_result = valid_algorithms[algorithm_name](graph, True)
+        coloring_result = valid_algos[algorithm_name](graph, True)
         # add extra infromation to result
         chromatic_number = None
         if "chromatic_number" in generated_graph[0].keys():
@@ -294,15 +278,10 @@ def solve_sudoku():
     for i in range(9):
         for j in range(9):
             if board[i][j] != 0:
-                initial_assignment[f"r{i}c{j}"] = board[i][j] - 1
+                initial_assignment[f"r{i}c{j}"] = board[i][j]
 
     # Define the valid sudoku algorithms (reuse your graph coloring algorithms).
-    valid_sudoku_algorithms = {
-        "backtracking": find_min_k_backtracking,
-        "greedy": greedy_coloring,
-        "dsatur": dsatur_coloring,
-        # You can add others as needed.
-    }
+    valid_sudoku_algorithms = valid_algorithms()
 
     if algorithm_name not in valid_sudoku_algorithms:
         return jsonify({"message": f"Invalid algorithm: {algorithm_name}"}), 400
@@ -392,7 +371,7 @@ def upload_graph():
 
     try:
         # Save the graph to MongoDB
-        graph_id = db_manager.save_graph(data)  # Assuming 'save_graph' returns the inserted ID
+        graph_id = db_manager.save_graph(data)
         return jsonify({
             'message': 'Graph uploaded successfully.',
             'id': str(graph_id)
