@@ -30,7 +30,7 @@ def get_hello_world():
 def color_graph():
     data = request.get_json()
     graph = data.get('graph')
-    algorithm_name = data.get('algorithm', 'greedy')
+    algorithm_name = data.get('algorithm')
     
     # validation
     if validate_graph(graph) is not True:
@@ -39,10 +39,10 @@ def color_graph():
     if validate_algorithm_name(algorithm_name) is not True:
         return validate_algorithm_name(algorithm_name)
 
-    valid_algorithms = valid_algorithms()
+    valid_algos = valid_algorithms()
 
     try:
-        coloring_result = valid_algorithms[algorithm_name](graph)
+        coloring_result = valid_algos[algorithm_name](graph)
     except Exception as e:
         return jsonify({
             'message': f'Error occured while executing the {algorithm_name} algorithm: {str(e)} \n {traceback.format_exc()}'
@@ -321,6 +321,91 @@ def solve_sudoku():
     }
 
     return jsonify({"result": result, "graph": sudoku_graph}), 200
+
+@app.route('/schedule-exams', methods=['POST'])
+def schedule_exams():
+    """
+    Expected JSON payload:
+    {
+      "classes": "Math101: Alice, Bob, Charlie\nPhysics101: Alice, David, Emily\nChemistry101: Bob, Emily, Frank\nBiology101: Charlie, George",
+      "algorithm": "greedy"   # or "dsatur", "backtracking", etc.
+    }
+    """
+    try:
+        data = request.get_json()
+        classes_input = data.get('classes')
+        algorithm_name = data.get('algorithm', 'greedy')
+
+        if not classes_input:
+            return jsonify({"message": "No class definitions provided."}), 400
+
+        # Parse the input into a dict: subject -> list of students.
+        classes = {}
+        for line in classes_input.strip().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if ':' not in line:
+                return jsonify({"message": "Invalid format. Each line must contain a colon separating subject and students."}), 400
+            subject, students_str = line.split(':', 1)
+            subject = subject.strip()
+            students = [s.strip() for s in students_str.split(',') if s.strip()]
+            if not subject:
+                return jsonify({"message": "Subject name cannot be empty."}), 400
+            classes[subject] = students
+
+        # Build the exam graph: each subject is a node; an edge exists if subjects share any student.
+        exam_graph = {}
+        subjects = list(classes.keys())
+        for subject in subjects:
+            exam_graph[subject] = set()
+
+        for i in range(len(subjects)):
+            for j in range(i + 1, len(subjects)):
+                subject_i = subjects[i]
+                subject_j = subjects[j]
+                if set(classes[subject_i]).intersection(set(classes[subject_j])):
+                    exam_graph[subject_i].add(subject_j)
+                    exam_graph[subject_j].add(subject_i)
+
+        # Convert neighbor sets to lists for JSON serialization.
+        for subject in exam_graph:
+            exam_graph[subject] = list(exam_graph[subject])
+
+        # Validate that the chosen algorithm is available.
+        valid_algs = valid_algorithms()
+        if algorithm_name not in valid_algs:
+            return jsonify({"message": f"Invalid algorithm: {algorithm_name}"}), 400
+
+        # Execute the selected graph coloring algorithm.
+        coloring_result = valid_algs[algorithm_name](exam_graph, record_steps=True)
+
+        # Convert the coloring to an exam schedule.
+        # Mapping: color index 0 -> "Slot 0", 1 -> "Slot 1", etc.
+        # (Adjust the mapping as needed.)
+        final_assignment = coloring_result.get("steps", [{}])[-1]
+        schedule = {subject: f"Slot {color}" for subject, color in final_assignment.items()}
+
+        # Optionally capture the chromatic number if provided.
+        chromatic_number = coloring_result.get("chromatic_number", None)
+
+        result = {
+            "schedule": schedule,
+            "chromatic_number": chromatic_number,
+            "steps": coloring_result.get("steps", [final_assignment]),
+            "algorithm": algorithm_name
+        }
+
+        # Return the result along with the exam graph as an adjacency list.
+        return jsonify({"result": result, "graph": exam_graph}), 200
+
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "message": f"Error occurred while scheduling exams: {str(e)}\n{traceback.format_exc()}"
+        }), 500
+
+
 
 @app.route("/graphs/get_custom", methods=["GET"])
 def get_custom_graphs():
