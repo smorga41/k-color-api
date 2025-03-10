@@ -1,10 +1,11 @@
 from flask import jsonify
 
-from algorithms.greedy import greedy_coloring, greedy_bfs_coloring
+from algorithms.greedy import greedy_coloring, greedy_bfs_coloring, welsh_powell_coloring
 from algorithms.dsatur import dsatur_coloring
 from algorithms.recursiveLargestFirst import rlf_coloring
 from algorithms.backtrack import find_min_k_backtracking
 from algorithms.backtrackDsatur import find_min_k_backtracking_dsatur
+from algorithms.branchAndBound import find_min_k_branch_and_bound
 from algorithms.chromaticPolynomial import compute_chromatic_polynomial
 from algorithms.metropolis import metropolis_coloring
 from algorithms.genetic import genetic_coloring
@@ -12,11 +13,13 @@ from algorithms.simulatedAnnealing import simulated_annealing_coloring
 def valid_algorithms():
     return ({
         "greedy": greedy_coloring,
+        "welsh-powell": welsh_powell_coloring,
         "greedy_bfs": greedy_bfs_coloring,
         "dsatur": dsatur_coloring,
         "rlf": rlf_coloring,
         "backtracking": find_min_k_backtracking,
         "backtracking_dsat": find_min_k_backtracking_dsatur,
+        "branch_and_bound": find_min_k_branch_and_bound,
         "deletion_contraction": compute_chromatic_polynomial,
         "metropolis": metropolis_coloring,
         "ga_coloring": genetic_coloring,
