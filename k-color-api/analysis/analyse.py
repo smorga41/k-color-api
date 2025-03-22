@@ -75,7 +75,6 @@ def run_coloring_experiment(graphs, algorithm_names, repeats):
             "algorithms": []
         }
         graph_adj = graph['graph']
-        print("graph_adj", graph_adj)
         
         for algorithm_name in algorithm_names:
             algorithm = algorithms[algorithm_name]
@@ -85,15 +84,17 @@ def run_coloring_experiment(graphs, algorithm_names, repeats):
             runs_data = []
 
             for run_id in range(repeats):
+                print(algorithm_name, "run", run_id, "starting")
                 # Measure runtime
-                res_obj, runtime = measure_runtime(algorithm, graph_adj)
+                res_obj, runtime, peak_memory = measure_runtime(algorithm, graph_adj)
                 k = len(set(res_obj['coloring'].values()))
                 # Measure memory
-                res_obj_mem, peak_memory = measure_memory(algorithm, graph_adj)
+                # res_obj_mem, peak_memory = measure_memory(algorithm, graph_adj)
+
+                print("Run", run_id, "of", algorithm_name, "Complete in ", runtime, "seconds")
                 
                 # assume coloring and k are consistent from both runtime and memory calls
-                # If they differ, prioritize runtime call results.
-                # For simplicity, just use the first call's results.
+                # For simplicity, use the first call's results.
                 runs_data.append({
                     "run_id": run_id,
                     "runtime": runtime,
