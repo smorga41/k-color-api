@@ -30,7 +30,6 @@ def backtrack_dsatur_coloring(graph, k, coloring, record_steps, steps):
     Returns:
       - True if a valid complete coloring is found using colors 1..k, False otherwise.
     """
-    print("record steps", record_steps)
     # Base case: if every node is colored (nonzero), we have a complete coloring.
     if all(coloring[node] != 0 for node in graph):
         return True
@@ -104,7 +103,7 @@ def find_min_k_backtracking_dsatur(graph, k=1, record_steps=False, initial_assig
         if k < max_fixed:
             k = max_fixed
 
-    steps_list = [] if record_steps else None
+    steps_list = []
 
     # We try increasing values of k until a complete coloring is found.
     while True:
@@ -118,6 +117,9 @@ def find_min_k_backtracking_dsatur(graph, k=1, record_steps=False, initial_assig
             if record_steps:
                 steps_list.append(coloring.copy())
                 res_obj['steps'] = steps_list
+            else:
+                res_obj['steps'] = [coloring.copy()]
+
             res_obj['coloring'] = coloring.copy()
             return res_obj
         # Increase k and try again.

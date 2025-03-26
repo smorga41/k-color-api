@@ -8,7 +8,6 @@ def get_graphs(graph_type: str, N: str, E: str, D: str, num_graphs: int, db_mana
     D = float(D) if D else None
     E = int(E) if E else None
     #TODO add validation that exactly 2 of N,D,E are present and the third is None
-    print(N,D,E)
     if not D:
         return get_graphs_ne(graph_type, N, E, num_graphs, db_manager)
     elif not E:

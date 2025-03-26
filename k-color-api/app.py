@@ -289,16 +289,12 @@ def solve_sudoku():
     try:
         solve_algorithm = valid_sudoku_algorithms[algorithm_name]
         # Call the selected algorithm.
-        # (Assuming the algorithm functions can accept an initial assignment as a second argument.
-        # If not, you might need to modify them to enforce pre-assigned values.)
         coloring_result = solve_algorithm(sudoku_graph, initial_assignment=initial_assignment, record_steps = True, k=9)
     except Exception as e:
         return jsonify({
             "message": f"Error occurred while solving Sudoku: {str(e)}\n{traceback.format_exc()}"
         }), 500
 
-    # Expect the coloring_result to include a "steps" array,
-    # where the first (or only) element is a mapping { cell_id: color_index, ... }.
     final_assignment = coloring_result.get("steps", [{}])[0]
 
     # Build the solved Sudoku board from the final assignment.
@@ -325,10 +321,10 @@ def solve_sudoku():
 @app.route('/schedule-exams', methods=['POST'])
 def schedule_exams():
     """
-    Expected JSON payload:
+    Expected JSON:
     {
       "classes": "Math101: Alice, Bob, Charlie\nPhysics101: Alice, David, Emily\nChemistry101: Bob, Emily, Frank\nBiology101: Charlie, George",
-      "algorithm": "greedy"   # or "dsatur", "backtracking", etc.
+      "algorithm": ...
     }
     """
     try:

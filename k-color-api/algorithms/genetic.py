@@ -3,6 +3,8 @@ import random
 import math
 from .algorithmResult import algorithmResultTemplate
 from .dsatur import dsatur_coloring  # for seeding initial solutions
+from .greedy import greedy_coloring  # for seeding initial solutions
+from .metropolis import metropolis_coloring  # for seeding initial solutions
 
 def genetic_coloring(
     graph,
@@ -14,13 +16,14 @@ def genetic_coloring(
     mutation_rate=0.05,
 ):
     """
-    Improved Genetic Algorithm for graph coloring.
+    Improved Genetic Algorithm for graph coloring with elitism and memetic local search.
     
     This implementation incorporates:
       - A cost function that penalizes both conflicts and high color count.
       - Informed crossover and mutation operators.
-      - Seeding of the initial population with DSATUR-based heuristic solutions.
-      - Continuation of the search even after a conflict-free solution is found.
+      - Seeding of the initial population.
+      - A local search (hill-climbing) step on offspring that uses incremental evaluation.
+      - Elitism to preserve the best individual across generations.
       
     Returns a dictionary with keys:
        "k", "runtime (s)", "steps", "coloring", "chromatic_number"
@@ -41,7 +44,7 @@ def genetic_coloring(
         res_obj["chromatic_number"] = None
         return res_obj
 
-    # --- Fitness & Cost functions ---
+    # --- Fitness & Cost Functions ---
     def compute_conflicts(coloring):
         """Count conflicting edges (each counted once)."""
         conflicts = 0
@@ -65,25 +68,63 @@ def genetic_coloring(
         """Higher fitness for lower cost."""
         return 1.0 / (1.0 + cost(coloring))
 
-    # --- Seed initial population ---
+    # --- Incremental Evaluation Helper ---
+    def compute_node_conflicts(node, coloring):
+        """
+        Compute the number of conflicts for a single node by comparing its color
+        against those of its neighbors.
+        """
+        return sum(1 for nbr in graph[node] if coloring.get(nbr) == coloring[node])
+
+    # --- Local Search (Memetic) Step Using Incremental Evaluation ---
+    def local_search(individual, max_iter=5):
+        """
+        Perform a hill-climbing search on the individual.
+        For each node, try alternative colors using only a local (incremental) evaluation.
+        """
+        improved = True
+        iter_count = 0
+        while improved and iter_count < max_iter:
+            improved = False
+            for node in individual.keys():
+                current_color = individual[node]
+                current_local = compute_node_conflicts(node, individual)
+                best_color = current_color
+                # Try all possible colors from 1 to q.
+                for color in range(1, q + 1):
+                    if color == current_color:
+                        continue
+                    individual[node] = color
+                    new_local = compute_node_conflicts(node, individual)
+                    if new_local < current_local:
+                        best_color = color
+                        current_local = new_local
+                        improved = True
+                    # Restore original color for the next candidate.
+                    individual[node] = current_color
+                individual[node] = best_color
+            iter_count += 1
+        return individual
+
+    # --- Seed Initial Population ---
     population = []
-    # Use a fraction of the individuals from DSATUR
+    # Use a fraction of the individuals from a greedy heuristic.
     heuristic_count = max(1, int(0.2 * population_size))
     try:
-        heuristic_solution = dsatur_coloring(graph, record_steps=False, initial_assignment=None)["coloring"]
+        heuristic_solution = greedy_coloring(graph, record_steps=False, initial_assignment=None)["coloring"]
     except Exception:
         heuristic_solution = None
 
     if heuristic_solution is not None:
-        # Add the heuristic solution and some slight variations.
         population.append(heuristic_solution.copy())
         for _ in range(heuristic_count - 1):
             sol = heuristic_solution.copy()
+            # Introduce slight perturbations.
             for node in sol:
-                if random.random() < 0.1:  # slight perturbation
+                if random.random() < 0.1:
                     sol[node] = random.randint(1, q)
             population.append(sol)
-    # Fill the rest with random individuals.
+    # Fill remaining individuals with random colorings.
     while len(population) < population_size:
         individual = {node: random.randint(1, q) for node in graph}
         population.append(individual)
@@ -99,7 +140,7 @@ def genetic_coloring(
         """
         For each node:
           - If both parents agree, use that color.
-          - Otherwise, compute local conflict (in parent's solution) and choose the color
+          - Otherwise, compute local conflict counts and choose the color from the parent
             with the lower conflict count (or pick randomly if equal).
         """
         child = {}
@@ -126,27 +167,35 @@ def genetic_coloring(
         child2 = informed_crossover(parent2, parent1)
         return child1, child2
 
-    # --- Informed Mutation Operator ---
+    # --- Informed Mutation Operator with Incremental Evaluation ---
     def mutate(individual):
         """
-        For each node in conflict, with probability mutation_rate, try all colors (1..q)
-        and choose the one that minimizes local conflict.
+        For each node in conflict, with probability mutation_rate,
+        try alternative colors using only a local evaluation of conflicts.
         """
         for node in list(individual.keys()):
-            if any(individual[node] == individual[nbr] for nbr in graph[node]):
+            # Only consider nodes that are currently in conflict.
+            if any(individual[node] == individual.get(nbr) for nbr in graph[node]):
                 if random.random() < mutation_rate:
                     current_color = individual[node]
+                    current_local = compute_node_conflicts(node, individual)
                     best_color = current_color
-                    best_local = sum(1 for nbr in graph[node] if individual[nbr] == current_color)
-                    for color in range(1, q + 1):
-                        local_conf = sum(1 for nbr in graph[node] if individual[nbr] == color)
-                        if local_conf < best_local:
-                            best_local = local_conf
+                    # Consider candidate colors from the neighborhood plus one random color.
+                    candidate_colors = set(individual[nbr] for nbr in graph[node])
+                    candidate_colors.add(current_color)
+                    candidate_colors.add(random.randint(1, q))
+                    for color in candidate_colors:
+                        if color == current_color:
+                            continue
+                        individual[node] = color
+                        new_local = compute_node_conflicts(node, individual)
+                        if new_local < current_local:
                             best_color = color
+                            current_local = new_local
                     individual[node] = best_color
         return individual
 
-    # --- Main GA loop ---
+    # --- Main GA Loop ---
     steps = []
     best_individual = None
     best_cost_val = math.inf
@@ -162,17 +211,28 @@ def genetic_coloring(
         if record_steps:
             steps.append(best_individual.copy())
 
-        # Do not stop on conflict-free; continue to reduce color count.
         new_population = []
+        # Elitism: carry the best individual forward.
+        elite = best_individual.copy()
+
         while len(new_population) < population_size:
             parent1 = tournament_selection(population)
             parent2 = tournament_selection(population)
             child1, child2 = crossover(parent1, parent2)
             mutate(child1)
             mutate(child2)
+            # Apply local search (memetic improvement) to each child.
+            child1 = local_search(child1, max_iter=5)
+            child2 = local_search(child2, max_iter=5)
             new_population.append(child1)
             if len(new_population) < population_size:
                 new_population.append(child2)
+
+        # Replace the worst individual with the elite if it improves the cost.
+        worst = max(new_population, key=lambda ind: cost(ind))
+        if cost(elite) < cost(worst):
+            new_population[new_population.index(worst)] = elite
+
         population = new_population
 
     end_time = time.time()
@@ -183,7 +243,7 @@ def genetic_coloring(
     res_obj["runtime (s)"] = end_time - start_time
     res_obj["steps"] = steps if record_steps else []
     res_obj["coloring"] = best_individual
-    # The GA does not guarantee optimal chromatic number.
+    # The GA does not guarantee the optimal chromatic number.
     res_obj["chromatic_number"] = None
 
     return res_obj

@@ -10,6 +10,7 @@ from algorithms.chromaticPolynomial import compute_chromatic_polynomial
 from algorithms.metropolis import metropolis_coloring
 from algorithms.genetic import genetic_coloring
 from algorithms.simulatedAnnealing import simulated_annealing_coloring
+from algorithms.simulatedAnnealing2 import simulated_annealing_coloring
 def valid_algorithms():
     return ({
         "greedy": greedy_coloring,
