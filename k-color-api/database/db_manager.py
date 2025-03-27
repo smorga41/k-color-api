@@ -97,7 +97,8 @@ class MongoDBManager:
         }
         projection = {
             "graph": 1,
-            "id": 1
+            "id": 1,
+            "chromatic_number": 1
         }
 
         try:
