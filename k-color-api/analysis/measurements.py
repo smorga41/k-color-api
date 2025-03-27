@@ -10,11 +10,16 @@ def measure_runtime(func, graph):
     :param kwargs: Keyword arguments for the function.
     :return: Time taken in seconds.
     """
+    tracemalloc.start()
     start_time = time.perf_counter()
     result = func(graph)
     end_time = time.perf_counter()
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
     runtime = end_time - start_time
-    return result, runtime
+    memory_usage = peak / (1024*1024)
+    return result, runtime, memory_usage
 
 def measure_memory(func, graph):
     """

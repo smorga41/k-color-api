@@ -85,6 +85,9 @@ def color_graph_from_config():
         if "description" in generated_graph[0].keys():
             description = generated_graph[0]['description']
         
+        if algorithm_name in ["backtracking_dsat", "backtracking"]:
+            db_manager.upsert_field(generated_graph[0]['_id'],"chromatic_number", coloring_result['k'])
+
         coloring_result.update({"chromatic_number": chromatic_number})
         coloring_result.update({"graph_description": description})
 

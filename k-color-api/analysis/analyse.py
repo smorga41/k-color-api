@@ -1,5 +1,7 @@
 import math
 import statistics
+import multiprocessing
+import time
 from scipy.stats import ttest_ind
 from analysis.measurements import measure_runtime, measure_memory
 from utils.validation import valid_algorithms
@@ -40,61 +42,46 @@ def compute_stats(values):
         "ci": compute_confidence_interval(values)
     }
 
-def run_coloring_experiment(graphs, algorithm_names, repeats):
+def init_worker():
+    # Rename the process for clarity.
+    multiprocessing.current_process().name = "TimeoutWorker"
+    # Optionally, close or reinitialize non-pickleable resources here.
+
+def run_with_timeout(func, args=(), kwargs={}, timeout=20):
+    pool = multiprocessing.Pool(processes=1, initializer=init_worker)
+    async_result = pool.apply_async(func, args, kwargs)
+    try:
+        result = async_result.get(timeout=timeout)
+    except multiprocessing.TimeoutError:
+        pool.terminate()
+        pool.join()
+        raise TimeoutError("Function call timed out")
+    pool.close()
+    pool.join()
+    return result
+
+def run_coloring_experiment(graphs, algorithm_names, repeats, timeout=20):
     """
     Run multiple k-coloring algorithms on a list of graphs multiple times.
-    
+
     Parameters
     ----------
     graphs : list
         A list of graphs, each in adjacency list representation. 
-        E.g. [ [ [1,2], [0,2], [0,1] ], [ ... ], ... ]
-        
-    algorithms : list
-        A list of callables (functions) that implement the k-coloring algorithm.
-        Each algorithm should accept a graph (adjacency list) and return:
-        (coloring_list, k) where:
-            coloring_list : list of integers representing the assigned color of each node.
-            k : integer, number of colors used.
-            
+        E.g. [ { 'graph': [ [1,2], [0,2], [0,1] ], 'chromatic_number': 3 }, ... ]
+    algorithm_names : list
+        A list of algorithm names (strings). Each name must correspond to a callable in valid_algorithms().
     repeats : int
         Number of times to run each algorithm on each graph.
-        
+    timeout : float or None
+        Maximum number of seconds to allow a single run. If None, run without timeout.
+        If the run exceeds the timeout, the algorithm is stopped and no results are recorded for that algorithm.
+
     Returns
     -------
     dict
         A results dictionary structured to facilitate visualization with Recharts.
-        
-        Structure:
-        {
-          "graphs": [
-            {
-              "graph_id": <int>,
-              "graph_data": <the graph adjacency list>,
-              "algorithms": [
-                {
-                  "name": <algorithm_name>,
-                  "runs": [
-                    {
-                      "run_id": <int>,
-                      "runtime": <float>,
-                      "memory": <int>,
-                      "k": <int>,
-                      "coloring": <list of colors per node>
-                    }, ...
-                  ],
-                  "aggregate": {
-                    "runtime": {"avg": float, "std": float, "min": float, "max": float},
-                    "memory": {"avg": float, "std": float, "min": float, "max": float},
-                    "k": {"avg": float, "std": float, "min": float, "max": float}
-                  }
-                }, ...
-              ]
-            }, ...
-          ]
-        }
     """
-
     results = {
         "graphs": []
     }
@@ -116,10 +103,23 @@ def run_coloring_experiment(graphs, algorithm_names, repeats):
             memories = []
             colors_used = []
             runs_data = []
+            successful = True
 
             for run_id in range(repeats):
                 print(algorithm_name, "run", run_id, "starting")
-                res_obj, runtime, peak_memory = measure_runtime(algorithm, graph_adj)
+                try:
+                    # If timeout is provided (not None), run with timeout, otherwise run normally.
+                    if timeout is not None:
+                        res_obj, runtime, peak_memory = run_with_timeout(
+                            measure_runtime, args=(algorithm, graph_adj), timeout=timeout
+                        )
+                    else:
+                        res_obj, runtime, peak_memory = measure_runtime(algorithm, graph_adj)
+                except TimeoutError:
+                    print(f"{algorithm_name} run {run_id} timed out after {timeout} seconds. Skipping further runs for this algorithm.")
+                    successful = False
+                    break  # Stop running this algorithm on the current graph
+
                 k = len(set(res_obj['coloring'].values()))
                 print("Run", run_id, "of", algorithm_name, "Complete in", runtime, "seconds")
                 
@@ -134,16 +134,18 @@ def run_coloring_experiment(graphs, algorithm_names, repeats):
                 memories.append(peak_memory)
                 colors_used.append(k)
 
-            algo_entry = {
-                "name": algorithm_name,
-                "runs": runs_data,
-                "aggregate": {
-                    "runtime": compute_stats(runtimes),
-                    "memory": compute_stats(memories),
-                    "k": compute_stats(colors_used)
+            # Only add algorithm results if all runs were successful (i.e. no timeout)
+            if successful:
+                algo_entry = {
+                    "name": algorithm_name,
+                    "runs": runs_data,
+                    "aggregate": {
+                        "runtime": compute_stats(runtimes),
+                        "memory": compute_stats(memories),
+                        "k": compute_stats(colors_used)
+                    }
                 }
-            }
-            graph_entry["algorithms"].append(algo_entry)
+                graph_entry["algorithms"].append(algo_entry)
         
         # Perform pairwise t-tests between all algorithm pairs for this graph.
         comparisons = []

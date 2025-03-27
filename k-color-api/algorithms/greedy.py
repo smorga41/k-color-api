@@ -103,7 +103,6 @@ def greedy_coloring(graph, record_steps=False):
              or None if a self-loop is detected.
     """
     # Prepare result template (assumes algorithmResultTemplate exists)
-    print("GREEEDY")
     res_obj = algorithmResultTemplate.copy()
     
     # Check for self-loops
